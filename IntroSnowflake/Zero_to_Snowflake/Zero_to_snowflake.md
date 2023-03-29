@@ -1,16 +1,18 @@
-1. Overview
-This entry-level guide designed for database and data warehouse administrators and architects will help you navigate the Snowflake interface and introduce you to some of our core capabilities.
-What You'll Learn:
-How to create stages, databases, tables, views, and virtual warehouses.
-How to load structured and semi-structured data.
-How to perform analytical queries on data in Snowflake, including joins between tables.
-How to clone objects.
-How to undo user errors using Time Travel.
-How to create roles and users, and grant them privileges.
-How to securely and easily share data with other accounts.
-How to consume datasets in the Snowflake Data Marketplace.
+## Overview
 
-The Lab Story
+This entry-level guide designed for database and data warehouse administrators and architects will help you navigate the Snowflake interface and introduce you to some of our core capabilities.
+
+What You'll Learn:
+ - How to create stages, databases, tables, views, and virtual warehouses.
+ - How to load structured and semi-structured data.
+ - How to perform analytical queries on data in Snowflake, including joins between tables.
+ - How to clone objects.
+ - How to undo user errors using Time Travel.
+ - How to create roles and users, and grant them privileges.
+ - How to securely and easily share data with other accounts.
+ - How to consume datasets in the Snowflake Data Marketplace.
+
+### The Lab Story
 This lab is based on the analytics team at Citi Bike, a real, citywide bike sharing system in New York City, USA. The team wants to run analytics on data from their internal transactional systems to better understand their riders and how to best serve them.
 
 We will first load structured .csv data from rider transactions into Snowflake. Later we will work with open-source, semi-structured JSON weather data to determine if there is any correlation between the number of bike rides and the weather.
@@ -27,7 +29,10 @@ https://docs.snowflake.com/en/user-guide-data-load
 
 The data consists of information about trip times, locations, user type, gender, age, etc. On AWS S3, the data represents 61.5M rows, 377 objects, and 1.9GB compressed.
 
-Create a Database and Table
+![image](https://user-images.githubusercontent.com/118057504/228446484-c0b970a5-3cdd-4077-8b49-1ba745f782a2.png)
+
+
+##  Create a Database and Table
 First, let's create a database called CITIBIKE to use for loading the structured data.
 
 Ensure you are using the sysadmin role by selecting Switch Role > SYSADMIN.
@@ -72,7 +77,7 @@ gender integer);
 Navigate to the Databases tab by clicking the HOME icon in the upper left corner of the worksheet. Then click Data > Databases. In the list of databases, click CITIBIKE > PUBLIC > TABLES to see your newly created TRIPS table. If you don't see any databases on the left, expand your browser because they may be hidden.
 Click TRIPS and the Columns tab to see the table structure you just created.
 
-Create an External Stage
+##  Create an External Stage
 We are working with structured, comma-delimited data that has already been staged in a public, external S3 bucket. Before we can use this data, we first need to create a Stage that specifies the location of our external bucket.
 
 Note: For this lab we are using an AWS-East bucket. To prevent data egress/transfer costs in the future, you should select a staging location from the same cloud provider and region as your Snowflake account.
@@ -97,7 +102,7 @@ list @citibike_trips;
 ```
 In the results in the bottom pane, you should see the list of files in the stage.
 
-Create a File Format
+##  Create a File Format
 Before we can load the data into Snowflake, we have to create a file format that matches the data structure.
 
 In the worksheet, run the following command to create the file format:
@@ -117,7 +122,7 @@ Verify that the file format has been created with the correct settings by execut
 show file formats in database citibike;
 ```
 
- Loading Data
+##  Loading Data
  In this section, we will use a virtual warehouse and the COPY command to initiate bulk loading of structured data into the Snowflake table we created in the last section
 
  Resize and Use a Warehouse for Data Loading
@@ -139,7 +144,7 @@ We are going to use this virtual warehouse to load the structured data in the CS
 
 Change the Size of this data warehouse from X-Small to Small. then click the Save Warehouse button
 
-Load the Data
+### Load the Data
 Now we can run a COPY command to load the data into the TRIPS table we created earlier.
 
 Navigate back to the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet in the Worksheets tab. Make sure the worksheet context is correctly set:
@@ -147,6 +152,7 @@ Navigate back to the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet in the Worksheets tab.
 Role: SYSADMIN Warehouse: COMPUTE_WH Database: CITIBIKE Schema = PUBLIC
 
 Execute the following statements in the worksheet to load the staged data into the table. This may take up to 30 seconds.
+
 ```
 copy into trips from @citibike_trips file_format=csv PATTERN = '.*csv.*' ;
 ```
@@ -156,35 +162,39 @@ Next, navigate to the Query History tab by clicking the Home icon and then Activ
 Now let's reload the TRIPS table with a larger warehouse to see the impact the additional compute resources have on the loading time.
 
 Go back to the worksheet and use the TRUNCATE TABLE command to clear the table of all data and metadata:
+
 ```
 truncate table trips;
 ```
 Verify that the table is empty by running the following command:
 
---verify table is clear
 ```
+--verify table is clear
 select * from trips limit 10;
 ```
 
 The result should show "Query produced no results".
 
 Change the warehouse size to large using the following ALTER WAREHOUSE:
+
 ```
 --change warehouse size from small to large (4x)
 alter warehouse compute_wh set warehouse_size='large';
 Verify the change using the following SHOW WAREHOUSES:
 
+```
 --load data with large warehouse
 show warehouses;
 ```
 Execute the same COPY INTO statement as before to load the same data again:
+
 ```
 copy into trips from @citibike_trips
 file_format=CSV;
 ```
 Once the load is done, navigate back to the Queries page (Home icon > Activity > Query History). Compare the times of the two COPY INTO commands. The load using the Large warehouse was significantly faster.
 
-Create a New Warehouse for Data Analytics
+##  Create a New Warehouse for Data Analytics
 
 Going back to the lab story, let's assume the Citi Bike team wants to eliminate resource contention between their data loading/ETL workloads and the analytical end users using BI tools to query Snowflake. As mentioned earlier, Snowflake can easily do this by assigning different, appropriately-sized warehouses to various workloads. Since Citi Bike already has a warehouse for data loading, let's create a new warehouse for the end users running analytics. We will use this warehouse to perform analytics in the next section.
 
@@ -195,7 +205,7 @@ If you are using Snowflake Enterprise Edition (or higher) and Multi-cluster Ware
 Make sure Max Clusters is set to 1.
 Leave all the other settings at their defaults.
 
-Working with Queries, the Results Cache, & Cloning
+##  Working with Queries, the Results Cache, & Cloning
 
 In the previous exercises, we loaded data into two tables using Snowflake's COPY bulk loader command and the COMPUTE_WH virtual warehouse. Now we are going to take on the role of the analytics users at Citi Bike who need to query data in those tables using the worksheet and the second warehouse ANALYTICS_WH.
 
@@ -235,7 +245,7 @@ from trips
 group by 1 order by 2 desc;
 ```
 
-Clone a Table
+##  Clone a Table
 Snowflake allows you to create clones, also known as "zero-copy clones" of tables, schemas, and databases in seconds. When a clone is created, Snowflake takes a snapshot of data present in the source object and makes it available to the cloned object. The cloned object is writable and independent of the clone source. Therefore, changes made to either the source object or the clone object are not included in the other.
 
 Note: Zero-Copy Cloning A massive benefit of zero-copy cloning is that the underlying data is not copied. Only the metadata and pointers to the underlying data change. Hence, clones are "zero-copy" and storage requirements are not doubled when the data is cloned. Most data warehouses cannot do this, but for Snowflake it is easy!
@@ -245,7 +255,7 @@ Run the following command in the worksheet to create a development (dev) table c
 create table trips_dev clone trips;
 ```
 
-Working with Semi-Structured Data, Views, & Joins
+##  Working with Semi-Structured Data, Views, & Joins
 
 This section requires loading additional data and, therefore, provides a review of data loading while also introducing loading semi-structured data.
 
@@ -259,8 +269,9 @@ The JSON data consists of weather information provided by MeteoStat detailing th
 
 Note: SEMI-STRUCTURED DATA Snowflake can easily load and query semi-structured data such as JSON, Parquet, or Avro without transformation. This is a key Snowflake feature because an increasing amount of business-relevant data being generated today is semi-structured, and many traditional data warehouses cannot easily load and query such data. Snowflake makes it easy!
 
-Create a New Database and Table for the Data
+##  Create a New Database and Table for the Data
 First, in the worksheet, let's create a database named WEATHER to use for storing the semi-structured JSON data.
+
 ```
 create database weather;
 ```
@@ -279,45 +290,49 @@ use schema public;
 Executing Multiple Commands Remember that you need to execute each command individually. However, you can execute them in sequence together by selecting all of the commands and then clicking the Play/Run button (or using the keyboard shortcut).
 
 Next, let's create a table named JSON_WEATHER_DATA to use for loading the JSON data. In the worksheet, execute the following CREATE TABLE command:
+
 ```
 create table json_weather_data (v variant);
 ```
 Note that Snowflake has a special column data type called VARIANT that allows storing the entire JSON object as a single row and eventually query the object directly.
 
-Create Another External Stage
+### Create Another External Stage
 In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, use the following command to create a stage that points to the bucket where the semi-structured JSON data is stored on AWS S3:
 
 ```
 create stage nyc_weather
 url = 's3://snowflake-workshop-lab/zero-weather-nyc';
 ```
+
 Now let's take a look at the contents of the nyc_weather stage. Execute the following LIST command to display the list of files:
+
 ```
 list @nyc_weather;
 
 ```
 In the results pane, you should see a list of .gz files from S3
 
-Load and Verify the Semi-structured Data
+### Load and Verify the Semi-structured Data
 In this section, we will use a warehouse to load the data from the S3 bucket into the JSON_WEATHER_DATA table we created earlier.
 
 In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, execute the COPY command below to load the data.
 
 Note that you can specify a FILE FORMAT object inline in the command. In the previous section where we loaded structured data in CSV format, we had to define a file format to support the CSV structure. Because the JSON data here is well-formed, we are able to simply specify the JSON type and use all the default settings:
+
 ```
 copy into json_weather_data
 from @nyc_weather 
     file_format = (type = json strip_outer_array = true);
     ```
 
-Create a View and Query Semi-Structured Data
+###  Create a View and Query Semi-Structured Data
 
 Views & Materialized Views A view allows the result of a query to be accessed as if it were a table. Views can help present data to end users in a cleaner manner, limit what end users can view in a source table, and write more modular SQL. Snowflake also supports materialized views in which the query results are stored as though the results are a table. This allows faster access, but requires storage space. Materialized views can be created and queried if you are using Snowflake Enterprise Edition (or higher).
 
 Run the following command to create a columnar view of the semi-structured JSON weather data so it is easier for analysts to understand and query. The 72502 value for station_id corresponds to Newark Airport, the closest station that has weather conditions for the whole period.
 
--- create a view that will put structure onto the semi-structured data
 ```
+-- create a view that will put structure onto the semi-structured data
 create or replace view json_weather_data_view as
 select
     v:obsTime::timestamp as observation_time,
@@ -341,14 +356,16 @@ from
 where
     station_id = '72502';
 ```
+ 
  Verify the view with the following query:
+
 ```
 select * from json_weather_data_view
 where date_trunc('month',observation_time) = '2018-01-01'
 limit 20;   
 ```
 
-Use a Join Operation to Correlate Against Data Sets
+### Use a Join Operation to Correlate Against Data Sets
 We will now join the JSON weather data to our CITIBIKE.PUBLIC.TRIPS data to answer our original question of how weather impacts the number of rides.
 
 Run the query below to join WEATHER to TRIPS and count the number of trips associated with certain weather conditions:
@@ -365,7 +382,7 @@ where conditions is not null
 group by 1 order by 2 desc;
 ```
 
-Using Time Travel
+###  Using Time Travel
 Snowflake's powerful Time Travel feature enables accessing historical data, as well as the objects storing the data, at any point within a period of time. The default window is 24 hours and, if you are using Snowflake Enterprise Edition, can be increased up to 90 days. Most data warehouses cannot offer this functionality, but - you guessed it - Snowflake makes it easy!
 
 Some useful applications include:
@@ -374,17 +391,21 @@ Restoring data-related objects such as tables, schemas, and databases that may h
 Duplicating and backing up data from key points in the past.
 Analyzing data usage and manipulation over specified periods of time.
 
-Drop and Undrop a Table
+### Drop and Undrop a Table
 First let's see how we can restore data objects that have been accidentally or intentionally deleted.
 
 In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, run the following DROP command to remove the JSON_WEATHER_DATA table:
+
 ```
 drop table json_weather_data;
 ```
+
 Run a query on the table:
+
 ```
 select * from json_weather_data limit 10;
 ```
+
 In the results pane at the bottom, you should see an error because the underlying table has been dropped.
 
 Now, restore the table:
@@ -397,11 +418,12 @@ The json_weather_data table should be restored. Verify by running the following 
 select * from json_weather_data limit 10;
 ```
 
-Roll Back a Table
+##  Roll Back a Table
 
 Let's roll back the TRIPS table in the CITIBIKE database to a previous state to fix an unintentional DML error that replaces all the station names in the table with the word "oops".
 
 First, run the following SQL statements to switch your worksheet to the proper context:
+
 ```
 use role sysadmin;
 
@@ -411,6 +433,7 @@ use database citibike;
 
 use schema public;
 ```
+
 Run the following command to replace all of the station names in the table with the word "oops":
 
 ```
@@ -432,6 +455,7 @@ limit 20;
 Normally we would need to scramble and hope we have a backup lying around.
 
 In Snowflake, we can simply run a command to find the query ID of the last UPDATE command and store it in a variable named $QUERY_ID.
+
 ```
 set query_id =
 (select query_id from table(information_schema.query_history_by_session (result_limit=>5))
@@ -439,6 +463,7 @@ where query_text like 'update%' order by start_time desc limit 1);
 ```
 
 Use Time Travel to recreate the table with the correct station names:
+
 ```
 create or replace table trips as
 (select * from trips before (statement => $query_id));
@@ -456,10 +481,10 @@ order by 2 desc
 limit 20;
 ```
 
-Working with Roles, Account Admin, & Account Usage
+##  Working with Roles, Account Admin, & Account Usage
 Continuing with the lab story, let's assume a junior DBA has joined Citi Bike and we want to create a new role for them with less privileges than the system-defined, default role of SYSADMIN.
 
-Create a New Role and Add a User
+### Create a New Role and Add a User
 In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, switch to the ACCOUNTADMIN role to create a new role. ACCOUNTADMIN encapsulates the SYSADMIN and SECURITYADMIN system-defined roles. It is the top-level role in the account and should be granted only to a limited number of users.
 
 In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, run the following command:
@@ -467,9 +492,11 @@ In the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet, run the following command:
 ```
 use role accountadmin;
 ```
+
 Before a role can be used for access control, at least one user must be assigned to it. So let's create a new role named JUNIOR_DBA and assign it to your Snowflake user. To complete this task, you need to know your username, which is the name you used to log in to the UI.
 
 Use the following commands to create the role and assign it to you. Before you run the GRANT ROLE command, replace YOUR_USERNAME_GOES_HERE with your username:
+
 ```
 create role junior_dba;
 
@@ -478,24 +505,30 @@ grant role junior_dba to user YOUR_USERNAME_GOES_HERE;
 Note: If you try to perform this operation while in a role such as SYSADMIN, it would fail due to insufficient privileges. By default (and design), the SYSADMIN role cannot create new roles or users.
 
 Change your worksheet context to the new JUNIOR_DBA role:
+
 ```
 use role junior_dba;
 ```
 Also, the warehouse is not selected because the newly created role does not have usage privileges on any warehouse. Let's fix it by switching back to ADMIN role and grant usage privileges to COMPUTE_WH warehouse.
+
 ```
 use role accountadmin;
-```
+
 grant usage on warehouse compute_wh to role junior_dba;
 ```
+
 Switch back to the JUNIOR_DBA role. You should be able to use COMPUTE_WH now.
+
 ```
 use role junior_dba;
 
 use warehouse compute_wh;
 ```
+
 Finally, you can notice that in the database object browser panel on the left, the CITIBIKE and WEATHER databases no longer appear. This is because the JUNIOR_DBA role does not have privileges to access them.
 
 Switch back to the ACCOUNTADMIN role and grant the JUNIOR_DBA the USAGE privilege required to view and use the CITIBIKE and WEATHER databases:
+
 ```
 use role accountadmin;
 
@@ -503,13 +536,16 @@ grant usage on database citibike to role junior_dba;
 
 grant usage on database weather to role junior_dba;
 ```
+
 Switch to the JUNIOR_DBA role:
+
 ```
 use role junior_dba;
 ```
+
 Notice that the CITIBIKE and WEATHER databases now appear in the database object browser panel on the left. If they don't appear, try clicking ... in the panel, then clicking Refresh.
 
-Sharing Data Securely & the Data Marketplace
+## Sharing Data Securely & the Data Marketplace
 Snowflake enables data access between accounts through the secure data sharing features. Shares are created by data providers and imported by data consumers, either through their own Snowflake account or a provisioned Snowflake Reader account. The consumer can be an external entity or a different internal business unit that is required to have its own unique Snowflake account.
 
 With secure data sharing:
@@ -536,10 +572,11 @@ In a real-world scenario, the Citi Bike Account Administrator would next add one
 
 Click the Create Share button at the bottom of the dialog:
 
-Snowflake Data Marketplace
+## Snowflake Data Marketplace
 Make sure you're using the ACCOUNTADMIN role and, navigate to the Marketplace.
 
-Resetting Your Snowflake Environment
+
+## Resetting Your Snowflake Environment
 If you would like to reset your environment by deleting all the objects created as part of this lab, run the SQL statements in a worksheet.
 
 First, ensure you are using the ACCOUNTADMIN role in the worksheet:
