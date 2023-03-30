@@ -16,3 +16,6 @@ Enter server and name of your warehouse:
 Select table and LOAD:
 
 ![image](https://user-images.githubusercontent.com/118057504/228784885-7e810b11-90a7-4c79-a7f7-fc48fca4c967.png)
+
+
+![image](https://user-images.githubusercontent.com/118057504/228789881-48b6ed9e-005a-449e-9d85-53e83c17b9d3.png)
