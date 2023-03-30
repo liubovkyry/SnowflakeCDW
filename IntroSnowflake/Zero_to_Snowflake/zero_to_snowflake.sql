@@ -222,3 +222,11 @@ drop database if exists citibike;
 drop database if exists weather;
 drop warehouse if exists analytics_wh;
 drop role if exists junior_dba;
+
+--to create a new table out of exsisted one (filtered for trips in 2016 only for exapmle)
+create table trips2016 as 
+select * from (
+select *
+from trips
+where STARTTIME between '2016-01-01T00:00:00Z' and '2016-12-31T23:59:59Z'
+limit 100)
