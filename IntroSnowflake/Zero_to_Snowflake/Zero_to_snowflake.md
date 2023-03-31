@@ -54,8 +54,8 @@ Database: CITIBIKE Schema = PUBLIC
 To make working in the worksheet easier, let's rename it. In the top left corner, click the worksheet name, which is the timestamp when the worksheet was created, and change it to CITIBIKE_ZERO_TO_SNOWFLAKE.
 
 Next we create a table called TRIPS to use for loading the comma-delimited data. Instead of using the UI, we use the worksheet to run the DDL that creates the table. Copy the following SQL text into your worksheet:
-```
-create or replace table trips
+
+```create or replace table trips
 (tripduration integer,
 starttime timestamp,
 stoptime timestamp,
@@ -74,6 +74,7 @@ birth_year integer,
 gender integer);
 ```
 
+
 Navigate to the Databases tab by clicking the HOME icon in the upper left corner of the worksheet. Then click Data > Databases. In the list of databases, click CITIBIKE > PUBLIC > TABLES to see your newly created TRIPS table. If you don't see any databases on the left, expand your browser because they may be hidden.
 Click TRIPS and the Columns tab to see the table structure you just created.
 
@@ -85,12 +86,13 @@ Note: For this lab we are using an AWS-East bucket. To prevent data egress/trans
 From the Databases tab, click the CITIBIKE database and PUBLIC schema. In the Stages tab, click the Create button, then Stage > Amazon S3.
 
 In the "Create Securable Object" dialog that opens, replace the following values in the SQL statement:
+
 ```
 stage_name: citibike_trips
-```
-```
+
 url: s3://snowflake-workshop-lab/citibike-trips-csv/
 ```
+
 Note: Make sure to include the final forward slash (/) at the end of the URL or you will encounter errors later when loading data from the bucket. Also ensure you have removed ‘credentials = (...)' statejment which is not required. The create stage command should resemble that show above exactly.
 
 The S3 bucket for this lab is public so you can leave the credentials options in the statement empty. In a real-world scenario, the bucket used for an external stage would likely require key information.
@@ -114,9 +116,10 @@ create or replace file format csv type='csv'
   skip_header = 0 field_optionally_enclosed_by = '\042' trim_space = false
   error_on_column_count_mismatch = false escape = 'none' escape_unenclosed_field = '\134'
   date_format = 'auto' timestamp_format = 'auto' null_if = ('') comment = 'file format for ingesting data for zero to snowflake';
-  ```
+ ```
 
 Verify that the file format has been created with the correct settings by executing the following command:
+
 
 ```
 show file formats in database citibike;
@@ -153,9 +156,11 @@ Role: SYSADMIN Warehouse: COMPUTE_WH Database: CITIBIKE Schema = PUBLIC
 
 Execute the following statements in the worksheet to load the staged data into the table. This may take up to 30 seconds.
 
+
 ```
 copy into trips from @citibike_trips file_format=csv PATTERN = '.*csv.*' ;
 ```
+
 
 Next, navigate to the Query History tab by clicking the Home icon and then Activity > Query History. Select the query at the top of the list, which should be the COPY INTO statement that was last executed. Select the Query Profile tab and note the steps taken by the query to execute, query details, most expensive nodes, and additional statistics.
 
@@ -163,9 +168,11 @@ Now let's reload the TRIPS table with a larger warehouse to see the impact the a
 
 Go back to the worksheet and use the TRUNCATE TABLE command to clear the table of all data and metadata:
 
+
 ```
 truncate table trips;
 ```
+
 Verify that the table is empty by running the following command:
 
 ```
@@ -180,12 +187,15 @@ Change the warehouse size to large using the following ALTER WAREHOUSE:
 ```
 --change warehouse size from small to large (4x)
 alter warehouse compute_wh set warehouse_size='large';
+```
+
 Verify the change using the following SHOW WAREHOUSES:
 
 ```
 --load data with large warehouse
 show warehouses;
 ```
+
 Execute the same COPY INTO statement as before to load the same data again:
 
 ```
@@ -218,11 +228,13 @@ Go to the CITIBIKE_ZERO_TO_SNOWFLAKE worksheet and change the warehouse to use t
 Role: SYSADMIN Warehouse: ANALYTICS_WH (L) Database: CITIBIKE Schema = PUBLIC
 
 Run the following query to see a sample of the trips data:
+
 ```
 select * from trips limit 20;
 ```
 
 Now, let's look at some basic hourly statistics on Citi Bike usage. Run the query below in the worksheet. For each hour, it shows the number of trips, average trip duration, and average trip distance.
+
 ```
 select date_trunc('hour', starttime) as "date",
 count(*) as "num trips",
@@ -237,6 +249,7 @@ Snowflake has a result cache that holds the results of every query executed in t
 
 Execute Another Query
 Next, let's run the following query to see which months are the busiest:
+
 ```
 select
 monthname(starttime) as "month",
@@ -251,6 +264,7 @@ Snowflake allows you to create clones, also known as "zero-copy clones" of table
 Note: Zero-Copy Cloning A massive benefit of zero-copy cloning is that the underlying data is not copied. Only the metadata and pointers to the underlying data change. Hence, clones are "zero-copy" and storage requirements are not doubled when the data is cloned. Most data warehouses cannot do this, but for Snowflake it is easy!
 
 Run the following command in the worksheet to create a development (dev) table clone of the trips table:
+
 ```
 create table trips_dev clone trips;
 ```
@@ -275,6 +289,7 @@ First, in the worksheet, let's create a database named WEATHER to use for storin
 ```
 create database weather;
 ```
+
 Execute the following USE commands to set the worksheet context appropriately:
 
 ```
@@ -308,7 +323,6 @@ Now let's take a look at the contents of the nyc_weather stage. Execute the foll
 
 ```
 list @nyc_weather;
-
 ```
 In the results pane, you should see a list of .gz files from S3
 
@@ -323,7 +337,7 @@ Note that you can specify a FILE FORMAT object inline in the command. In the pre
 copy into json_weather_data
 from @nyc_weather 
     file_format = (type = json strip_outer_array = true);
-    ```
+ ```
 
 ###  Create a View and Query Semi-Structured Data
 
@@ -412,6 +426,7 @@ Now, restore the table:
 ```
 undrop table json_weather_data;
 ```
+
 The json_weather_data table should be restored. Verify by running the following query:
 
 ```
@@ -583,6 +598,7 @@ First, ensure you are using the ACCOUNTADMIN role in the worksheet:
 ```
 use role accountadmin;
 ```
+
 Then, run the following SQL commands to drop all the objects we created in the lab:
 
 drop share if exists zero_to_snowflake_shared_data;
